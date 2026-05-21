@@ -1,0 +1,17 @@
+{
+  "name": "android-windows-key-relay",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Railway WebSocket relay for Android to Windows key input forwarding",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
