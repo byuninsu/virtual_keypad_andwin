@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="vk_background">#FFF7F2</color>
+    <color name="vk_surface">#FFFFFFFF</color>
+    <color name="vk_primary">#0E5E6F</color>
+    <color name="vk_primary_dark">#083D47</color>
+    <color name="vk_accent">#F2A541</color>
+    <color name="vk_text">#1A1A1A</color>
+</resources>

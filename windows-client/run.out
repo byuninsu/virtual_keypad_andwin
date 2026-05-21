@@ -1,0 +1,2 @@
+Connecting to wss://virtualkeypadandwin-production.up.railway.app/ room=smoke-test
+< {"type":"joined","roomId":"smoke-test","role":"windows"}

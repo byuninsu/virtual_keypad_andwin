@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.VirtualKeypad" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/vk_primary</item>
+        <item name="colorPrimaryVariant">@color/vk_primary_dark</item>
+        <item name="colorSecondary">@color/vk_accent</item>
+        <item name="android:statusBarColor">@color/vk_primary_dark</item>
+        <item name="android:navigationBarColor">@color/vk_surface</item>
+        <item name="android:windowBackground">@color/vk_background</item>
+        <item name="android:textColorPrimary">@color/vk_text</item>
+    </style>
+</resources>

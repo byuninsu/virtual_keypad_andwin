@@ -1,0 +1,2 @@
+  - 헬스체크: https://virtualkeypadandwin-production.up.railway.app/health
+  - relay 접속: wss://virtualkeypadandwin-production.up.railway.app
