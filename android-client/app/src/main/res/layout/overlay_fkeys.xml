@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <!-- 확장 상태: [≡][F1][F2][F3][F4][F5][X] 한 줄 -->
+    <LinearLayout
+        android:id="@+id/overlayFkeysExpanded"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="4dp">
+
+        <TextView
+            android:id="@+id/overlayFkeysDrag"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:gravity="center"
+            android:paddingStart="6dp"
+            android:paddingEnd="10dp"
+            android:text="≡"
+            android:textColor="#CCFFFFFF"
+            android:textSize="22sp" />
+
+        <Button
+            android:id="@+id/overlayTop1Button"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/overlay_button_circle_small"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:text="1"
+            android:textColor="#FF2A2A2A"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/overlayTop2Button"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/overlay_button_circle_small"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:text="2"
+            android:textColor="#FF2A2A2A"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/overlayTop3Button"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/overlay_button_circle_small"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:text="3"
+            android:textColor="#FF2A2A2A"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/overlayTop4Button"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/overlay_button_circle_small"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:text="4"
+            android:textColor="#FF2A2A2A"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/overlayTop5Button"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/overlay_button_circle_small"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:text="5"
+            android:textColor="#FF2A2A2A"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/overlayCloseButton"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/overlay_button_circle_small"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:text="X"
+            android:textColor="#FF2A2A2A"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- 축소 상태: O 버튼만 남아있음 (드래그 + 탭으로 복원) -->
+    <Button
+        android:id="@+id/overlayRestoreButton"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:background="@drawable/overlay_button_circle_small"
+        android:minWidth="0dp"
+        android:minHeight="0dp"
+        android:text="O"
+        android:textColor="#FF2A2A2A"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+</FrameLayout>

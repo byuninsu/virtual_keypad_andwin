@@ -23,6 +23,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
+        <!-- 드래그 핸들 + 닫기 버튼 -->
         <LinearLayout
             android:id="@+id/overlayHeader"
             android:layout_width="match_parent"
@@ -52,10 +53,11 @@
                 android:textSize="12sp" />
         </LinearLayout>
 
+        <!-- F1~F5: 상단 중앙 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="6dp"
             android:gravity="center"
             android:orientation="horizontal">
 
@@ -75,7 +77,7 @@
                 android:id="@+id/overlayTop2Button"
                 android:layout_width="44dp"
                 android:layout_height="44dp"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="6dp"
                 android:background="@drawable/overlay_button_circle_small"
                 android:minWidth="0dp"
                 android:minHeight="0dp"
@@ -88,7 +90,7 @@
                 android:id="@+id/overlayTop3Button"
                 android:layout_width="44dp"
                 android:layout_height="44dp"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="6dp"
                 android:background="@drawable/overlay_button_circle_small"
                 android:minWidth="0dp"
                 android:minHeight="0dp"
@@ -101,7 +103,7 @@
                 android:id="@+id/overlayTop4Button"
                 android:layout_width="44dp"
                 android:layout_height="44dp"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="6dp"
                 android:background="@drawable/overlay_button_circle_small"
                 android:minWidth="0dp"
                 android:minHeight="0dp"
@@ -114,7 +116,7 @@
                 android:id="@+id/overlayTop5Button"
                 android:layout_width="44dp"
                 android:layout_height="44dp"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="6dp"
                 android:background="@drawable/overlay_button_circle_small"
                 android:minWidth="0dp"
                 android:minHeight="0dp"
@@ -124,12 +126,15 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
+        <!-- 메인 영역: D-패드(좌) + ABCD(우) -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
+            <!-- D-패드 -->
             <FrameLayout
                 android:layout_width="220dp"
                 android:layout_height="220dp"
@@ -186,84 +191,80 @@
                     android:text="▼"
                     android:textColor="#FF444444"
                     android:textSize="24sp" />
-
             </FrameLayout>
 
-            <FrameLayout
-                android:layout_width="220dp"
-                android:layout_height="220dp"
-                android:layout_marginStart="14dp">
+            <!-- A,B,C,D: D-패드 우측에 밀착, 겹침 없음 -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:gravity="center"
+                android:orientation="vertical">
 
                 <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:orientation="vertical">
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
 
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                    <Button
+                        android:id="@+id/overlayPrimaryButton"
+                        android:layout_width="72dp"
+                        android:layout_height="72dp"
+                        android:background="@drawable/overlay_button_circle"
+                        android:minWidth="0dp"
+                        android:minHeight="0dp"
+                        android:text="A"
+                        android:textColor="#FF444444"
+                        android:textSize="24sp"
+                        android:textStyle="bold" />
 
-                        <Button
-                            android:id="@+id/overlayPrimaryButton"
-                            android:layout_width="72dp"
-                            android:layout_height="72dp"
-                            android:background="@drawable/overlay_button_circle"
-                            android:minWidth="0dp"
-                            android:minHeight="0dp"
-                            android:text="A"
-                            android:textColor="#FF444444"
-                            android:textSize="24sp"
-                            android:textStyle="bold" />
-
-                        <Button
-                            android:id="@+id/overlaySecondaryButton"
-                            android:layout_width="72dp"
-                            android:layout_height="72dp"
-                            android:layout_marginStart="14dp"
-                            android:background="@drawable/overlay_button_circle"
-                            android:minWidth="0dp"
-                            android:minHeight="0dp"
-                            android:text="B"
-                            android:textColor="#FF444444"
-                            android:textSize="24sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="14dp"
-                        android:orientation="horizontal">
-
-                        <Button
-                            android:id="@+id/overlayTertiaryButton"
-                            android:layout_width="72dp"
-                            android:layout_height="72dp"
-                            android:background="@drawable/overlay_button_circle"
-                            android:minWidth="0dp"
-                            android:minHeight="0dp"
-                            android:text="C"
-                            android:textColor="#FF444444"
-                            android:textSize="24sp"
-                            android:textStyle="bold" />
-
-                        <Button
-                            android:id="@+id/overlayQuaternaryButton"
-                            android:layout_width="72dp"
-                            android:layout_height="72dp"
-                            android:layout_marginStart="14dp"
-                            android:background="@drawable/overlay_button_circle"
-                            android:minWidth="0dp"
-                            android:minHeight="0dp"
-                            android:text="D"
-                            android:textColor="#FF444444"
-                            android:textSize="24sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
+                    <Button
+                        android:id="@+id/overlaySecondaryButton"
+                        android:layout_width="72dp"
+                        android:layout_height="72dp"
+                        android:layout_marginStart="12dp"
+                        android:background="@drawable/overlay_button_circle"
+                        android:minWidth="0dp"
+                        android:minHeight="0dp"
+                        android:text="B"
+                        android:textColor="#FF444444"
+                        android:textSize="24sp"
+                        android:textStyle="bold" />
                 </LinearLayout>
-            </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/overlayTertiaryButton"
+                        android:layout_width="72dp"
+                        android:layout_height="72dp"
+                        android:background="@drawable/overlay_button_circle"
+                        android:minWidth="0dp"
+                        android:minHeight="0dp"
+                        android:text="C"
+                        android:textColor="#FF444444"
+                        android:textSize="24sp"
+                        android:textStyle="bold" />
+
+                    <Button
+                        android:id="@+id/overlayQuaternaryButton"
+                        android:layout_width="72dp"
+                        android:layout_height="72dp"
+                        android:layout_marginStart="12dp"
+                        android:background="@drawable/overlay_button_circle"
+                        android:minWidth="0dp"
+                        android:minHeight="0dp"
+                        android:text="D"
+                        android:textColor="#FF444444"
+                        android:textSize="24sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
+
         </LinearLayout>
     </LinearLayout>
 </FrameLayout>

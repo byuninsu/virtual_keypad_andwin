@@ -75,6 +75,33 @@ class KeypadSettingsStore(context: Context) {
             .apply()
     }
 
+    fun loadDpadAnchor(): OverlayAnchor? {
+        if (!preferences.contains(KEY_DPAD_X)) return null
+        return OverlayAnchor(preferences.getInt(KEY_DPAD_X, 0), preferences.getInt(KEY_DPAD_Y, 0))
+    }
+
+    fun saveDpadAnchor(anchor: OverlayAnchor) {
+        preferences.edit().putInt(KEY_DPAD_X, anchor.x).putInt(KEY_DPAD_Y, anchor.y).apply()
+    }
+
+    fun loadFkeysAnchor(): OverlayAnchor? {
+        if (!preferences.contains(KEY_FKEYS_X)) return null
+        return OverlayAnchor(preferences.getInt(KEY_FKEYS_X, 0), preferences.getInt(KEY_FKEYS_Y, 0))
+    }
+
+    fun saveFkeysAnchor(anchor: OverlayAnchor) {
+        preferences.edit().putInt(KEY_FKEYS_X, anchor.x).putInt(KEY_FKEYS_Y, anchor.y).apply()
+    }
+
+    fun loadAbcdAnchor(): OverlayAnchor? {
+        if (!preferences.contains(KEY_ABCD_X)) return null
+        return OverlayAnchor(preferences.getInt(KEY_ABCD_X, 0), preferences.getInt(KEY_ABCD_Y, 0))
+    }
+
+    fun saveAbcdAnchor(anchor: OverlayAnchor) {
+        preferences.edit().putInt(KEY_ABCD_X, anchor.x).putInt(KEY_ABCD_Y, anchor.y).apply()
+    }
+
     companion object {
         const val DEFAULT_SERVER_URL = "wss://virtualkeypadandwin-production.up.railway.app"
         const val DEFAULT_ROOM_ID = "test123"
@@ -83,6 +110,12 @@ class KeypadSettingsStore(context: Context) {
         private const val KEY_ROOM_ID = "room_id"
         private const val KEY_OVERLAY_X = "overlay_x"
         private const val KEY_OVERLAY_Y = "overlay_y"
+        private const val KEY_DPAD_X = "dpad_x"
+        private const val KEY_DPAD_Y = "dpad_y"
+        private const val KEY_FKEYS_X = "fkeys_x"
+        private const val KEY_FKEYS_Y = "fkeys_y"
+        private const val KEY_ABCD_X = "abcd_x"
+        private const val KEY_ABCD_Y = "abcd_y"
 
         val DEFAULT_BUTTONS = listOf(
             KeypadButtonConfig("up", "Up", "ArrowUp"),

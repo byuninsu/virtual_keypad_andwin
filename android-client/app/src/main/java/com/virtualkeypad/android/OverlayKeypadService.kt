@@ -17,16 +17,19 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.Button
-import android.widget.LinearLayout
 import androidx.core.app.NotificationCompat
 
 class OverlayKeypadService : Service(), RelayConnectionManager.Listener {
     private lateinit var windowManager: WindowManager
     private lateinit var settingsStore: KeypadSettingsStore
-    private var overlayView: View? = null
-    private var layoutParams: WindowManager.LayoutParams? = null
     private var latestSnapshot = RelaySnapshot()
-    private var isOverlayExpanded = true
+    private var isExpanded = true
+
+    private data class OverlayWindow(val view: View, val params: WindowManager.LayoutParams)
+
+    private var dpadWindow: OverlayWindow? = null
+    private var fkeysWindow: OverlayWindow? = null
+    private var abcdWindow: OverlayWindow? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -40,13 +43,8 @@ class OverlayKeypadService : Service(), RelayConnectionManager.Listener {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_INIT -> {
-            }
-
-            ACTION_HIDE -> {
-                removeOverlay()
-            }
-
+            ACTION_INIT -> {}
+            ACTION_HIDE -> removeOverlay()
             ACTION_SHOW -> {
                 if (!Settings.canDrawOverlays(this)) {
                     stopSelf()
@@ -54,19 +52,9 @@ class OverlayKeypadService : Service(), RelayConnectionManager.Listener {
                 }
                 showOverlay()
             }
-
-            ACTION_CONNECT -> {
-                RelayConnectionManager.connect(settingsStore.getServerUrl(), settingsStore.getRoomId())
-            }
-
-            ACTION_DISCONNECT -> {
-                RelayConnectionManager.disconnect("notification_disconnect")
-            }
-
-            ACTION_OPEN_APP -> {
-                removeOverlay()
-            }
-
+            ACTION_CONNECT -> RelayConnectionManager.connect(settingsStore.getServerUrl(), settingsStore.getRoomId())
+            ACTION_DISCONNECT -> RelayConnectionManager.disconnect("notification_disconnect")
+            ACTION_OPEN_APP -> removeOverlay()
             else -> {
                 if (!Settings.canDrawOverlays(this)) {
                     stopSelf()
@@ -75,7 +63,6 @@ class OverlayKeypadService : Service(), RelayConnectionManager.Listener {
                 showOverlay()
             }
         }
-
         return START_STICKY
     }
 
@@ -92,64 +79,123 @@ class OverlayKeypadService : Service(), RelayConnectionManager.Listener {
     }
 
     override fun onLog(line: String) = Unit
-
     override fun onError(message: String) = Unit
 
     private fun showOverlay() {
-        if (overlayView != null) {
-            bindButtons(overlayView!!)
-            setOverlayExpanded(true)
+        if (fkeysWindow != null) {
+            if (!isExpanded) setExpanded(true)
+            bindButtons()
             refreshNotification()
             return
         }
 
-        val view = LayoutInflater.from(this).inflate(R.layout.overlay_keypad, null)
-        val anchor = settingsStore.loadOverlayAnchor()
-        val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-            PixelFormat.TRANSLUCENT
-        ).apply {
-            gravity = Gravity.TOP or Gravity.START
-            x = anchor.x
-            y = anchor.y
-        }
+        val dm = resources.displayMetrics
+        val sw = dm.widthPixels
+        val sh = dm.heightPixels
+        val density = dm.density
+        val midY = (sh * 0.33f).toInt()
 
-        overlayView = view
-        layoutParams = params
-        bindButtons(view)
-        setupDrag(view.findViewById(R.id.overlayHeader))
-        setupDrag(view.findViewById(R.id.overlayToggleButton)) {
-            setOverlayExpanded(true)
+        // F1~F5 패널: 항상 살아있고 X→O 토글로 expand/collapse 제어
+        val fkeysView = LayoutInflater.from(this).inflate(R.layout.overlay_fkeys, null)
+        // ≡(~40dp) + F1-F5(5×44+4×6dp) + X(44dp) + padding(8dp) ≈ 344dp
+        val fkeysWidthPx = (344 * density).toInt()
+        val fkeysDefaultX = ((sw - fkeysWidthPx) / 2).coerceAtLeast(0)
+        val fkeysAnchor = settingsStore.loadFkeysAnchor() ?: OverlayAnchor(fkeysDefaultX, 0)
+        val fkeysParams = makeParams(fkeysAnchor)
+        fkeysWindow = OverlayWindow(fkeysView, fkeysParams)
+        setupWindowDrag(fkeysView.findViewById(R.id.overlayFkeysDrag), fkeysWindow!!) {
+            settingsStore.saveFkeysAnchor(it)
         }
-        windowManager.addView(view, params)
-        setOverlayExpanded(true)
+        fkeysView.findViewById<View>(R.id.overlayCloseButton).setOnClickListener {
+            setExpanded(false)
+        }
+        // O 버튼: 드래그 가능 + 탭으로 복원
+        setupWindowDrag(
+            handle = fkeysView.findViewById(R.id.overlayRestoreButton),
+            window = fkeysWindow!!,
+            onTap = { setExpanded(true) }
+        ) { settingsStore.saveFkeysAnchor(it) }
+        windowManager.addView(fkeysView, fkeysParams)
+
+        // D-pad: 좌측 끝
+        val dpadView = LayoutInflater.from(this).inflate(R.layout.overlay_dpad, null)
+        val dpadAnchor = settingsStore.loadDpadAnchor() ?: OverlayAnchor(0, midY)
+        val dpadParams = makeParams(dpadAnchor)
+        dpadWindow = OverlayWindow(dpadView, dpadParams)
+        setupWindowDrag(dpadView.findViewById(R.id.overlayDpadDrag), dpadWindow!!) {
+            settingsStore.saveDpadAnchor(it)
+        }
+        windowManager.addView(dpadView, dpadParams)
+
+        // A,B,C,D: 우측 끝
+        val abcdView = LayoutInflater.from(this).inflate(R.layout.overlay_abcd, null)
+        val abcdWidthPx = (164 * density).toInt()
+        val abcdDefaultX = (sw - abcdWidthPx).coerceAtLeast(0)
+        val abcdAnchor = settingsStore.loadAbcdAnchor() ?: OverlayAnchor(abcdDefaultX, midY)
+        val abcdParams = makeParams(abcdAnchor)
+        abcdWindow = OverlayWindow(abcdView, abcdParams)
+        setupWindowDrag(abcdView.findViewById(R.id.overlayAbcdDrag), abcdWindow!!) {
+            settingsStore.saveAbcdAnchor(it)
+        }
+        windowManager.addView(abcdView, abcdParams)
+
+        isExpanded = true
+        bindButtons()
         refreshNotification()
     }
 
-    private fun bindButtons(view: View) {
+    private fun setExpanded(expanded: Boolean) {
+        val fkeys = fkeysWindow?.view ?: return
+        val dpad = dpadWindow ?: return
+        val abcd = abcdWindow ?: return
+
+        fkeys.findViewById<View>(R.id.overlayFkeysExpanded).visibility =
+            if (expanded) View.VISIBLE else View.GONE
+        fkeys.findViewById<View>(R.id.overlayRestoreButton).visibility =
+            if (expanded) View.GONE else View.VISIBLE
+
+        if (expanded) {
+            if (!dpad.view.isAttachedToWindow) windowManager.addView(dpad.view, dpad.params)
+            if (!abcd.view.isAttachedToWindow) windowManager.addView(abcd.view, abcd.params)
+        } else {
+            if (dpad.view.isAttachedToWindow) windowManager.removeView(dpad.view)
+            if (abcd.view.isAttachedToWindow) windowManager.removeView(abcd.view)
+        }
+        isExpanded = expanded
+        refreshNotification()
+    }
+
+    private fun makeParams(anchor: OverlayAnchor) = WindowManager.LayoutParams(
+        WindowManager.LayoutParams.WRAP_CONTENT,
+        WindowManager.LayoutParams.WRAP_CONTENT,
+        WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+        PixelFormat.TRANSLUCENT
+    ).apply {
+        gravity = Gravity.TOP or Gravity.START
+        x = anchor.x
+        y = anchor.y
+    }
+
+    private fun bindButtons() {
+        val dpad = dpadWindow?.view ?: return
+        val fkeys = fkeysWindow?.view ?: return
+        val abcd = abcdWindow?.view ?: return
         val buttons = settingsStore.loadButtons().associateBy { it.prefKey }
 
-        bindKeyButton(view.findViewById(R.id.overlayUpButton), buttons.getValue("up"))
-        bindKeyButton(view.findViewById(R.id.overlayDownButton), buttons.getValue("down"))
-        bindKeyButton(view.findViewById(R.id.overlayLeftButton), buttons.getValue("left"))
-        bindKeyButton(view.findViewById(R.id.overlayRightButton), buttons.getValue("right"))
-        bindKeyButton(view.findViewById(R.id.overlayTop1Button), buttons.getValue("top1"))
-        bindKeyButton(view.findViewById(R.id.overlayTop2Button), buttons.getValue("top2"))
-        bindKeyButton(view.findViewById(R.id.overlayTop3Button), buttons.getValue("top3"))
-        bindKeyButton(view.findViewById(R.id.overlayTop4Button), buttons.getValue("top4"))
-        bindKeyButton(view.findViewById(R.id.overlayTop5Button), buttons.getValue("top5"))
-        bindKeyButton(view.findViewById(R.id.overlayPrimaryButton), buttons.getValue("primary"))
-        bindKeyButton(view.findViewById(R.id.overlaySecondaryButton), buttons.getValue("secondary"))
-        bindKeyButton(view.findViewById(R.id.overlayTertiaryButton), buttons.getValue("tertiary"))
-        bindKeyButton(view.findViewById(R.id.overlayQuaternaryButton), buttons.getValue("quaternary"))
-
-        view.findViewById<View>(R.id.overlayCloseButton).setOnClickListener {
-            setOverlayExpanded(false)
-        }
+        bindKeyButton(dpad.findViewById(R.id.overlayUpButton), buttons.getValue("up"))
+        bindKeyButton(dpad.findViewById(R.id.overlayDownButton), buttons.getValue("down"))
+        bindKeyButton(dpad.findViewById(R.id.overlayLeftButton), buttons.getValue("left"))
+        bindKeyButton(dpad.findViewById(R.id.overlayRightButton), buttons.getValue("right"))
+        bindKeyButton(fkeys.findViewById(R.id.overlayTop1Button), buttons.getValue("top1"))
+        bindKeyButton(fkeys.findViewById(R.id.overlayTop2Button), buttons.getValue("top2"))
+        bindKeyButton(fkeys.findViewById(R.id.overlayTop3Button), buttons.getValue("top3"))
+        bindKeyButton(fkeys.findViewById(R.id.overlayTop4Button), buttons.getValue("top4"))
+        bindKeyButton(fkeys.findViewById(R.id.overlayTop5Button), buttons.getValue("top5"))
+        bindKeyButton(abcd.findViewById(R.id.overlayPrimaryButton), buttons.getValue("primary"))
+        bindKeyButton(abcd.findViewById(R.id.overlaySecondaryButton), buttons.getValue("secondary"))
+        bindKeyButton(abcd.findViewById(R.id.overlayTertiaryButton), buttons.getValue("tertiary"))
+        bindKeyButton(abcd.findViewById(R.id.overlayQuaternaryButton), buttons.getValue("quaternary"))
     }
 
     private fun bindKeyButton(button: Button, config: KeypadButtonState) {
@@ -161,7 +207,6 @@ class OverlayKeypadService : Service(), RelayConnectionManager.Listener {
                 button.alpha = 1f
                 RelayConnectionManager.sendKeyUp(config)
             }
-
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     button.isPressed = true
@@ -169,28 +214,28 @@ class OverlayKeypadService : Service(), RelayConnectionManager.Listener {
                     RelayConnectionManager.sendKeyDown(config)
                     true
                 }
-
                 MotionEvent.ACTION_MOVE -> {
-                    val inside = event.x >= 0f &&
-                        event.y >= 0f &&
-                        event.x <= button.width &&
-                        event.y <= button.height
+                    val inside = event.x >= 0f && event.y >= 0f &&
+                        event.x <= button.width && event.y <= button.height
                     button.isPressed = inside
                     button.alpha = if (inside) 0.72f else 1f
                     true
                 }
-
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     releaseIfNeeded()
                     true
                 }
-
                 else -> false
             }
         }
     }
 
-    private fun setupDrag(handle: View, onTap: (() -> Unit)? = null) {
+    private fun setupWindowDrag(
+        handle: View,
+        window: OverlayWindow,
+        onTap: (() -> Unit)? = null,
+        onSave: (OverlayAnchor) -> Unit
+    ) {
         handle.setOnTouchListener(object : View.OnTouchListener {
             private var startX = 0
             private var startY = 0
@@ -199,8 +244,7 @@ class OverlayKeypadService : Service(), RelayConnectionManager.Listener {
             private var dragging = false
 
             override fun onTouch(v: View, event: MotionEvent): Boolean {
-                val params = layoutParams ?: return false
-
+                val params = window.params
                 when (event.actionMasked) {
                     MotionEvent.ACTION_DOWN -> {
                         startX = params.x
@@ -210,7 +254,6 @@ class OverlayKeypadService : Service(), RelayConnectionManager.Listener {
                         dragging = false
                         return true
                     }
-
                     MotionEvent.ACTION_MOVE -> {
                         val deltaX = event.rawX - touchX
                         val deltaY = event.rawY - touchY
@@ -220,43 +263,29 @@ class OverlayKeypadService : Service(), RelayConnectionManager.Listener {
                         if (dragging) {
                             params.x = startX + deltaX.toInt()
                             params.y = startY + deltaY.toInt()
-                            overlayView?.let { windowManager.updateViewLayout(it, params) }
-                            settingsStore.saveOverlayAnchor(OverlayAnchor(params.x, params.y))
+                            windowManager.updateViewLayout(window.view, params)
+                            onSave(OverlayAnchor(params.x, params.y))
                         }
                         return true
                     }
-
                     MotionEvent.ACTION_UP -> {
-                        if (!dragging) {
-                            onTap?.invoke()
-                            v.performClick()
-                        }
+                        if (!dragging) onTap?.invoke()
                         return true
                     }
                 }
-
                 return false
             }
         })
     }
 
-    private fun setOverlayExpanded(expanded: Boolean) {
-        val view = overlayView ?: return
-        val overlayPanel = view.findViewById<LinearLayout>(R.id.overlayPanel)
-        val toggleButton = view.findViewById<Button>(R.id.overlayToggleButton)
-        isOverlayExpanded = expanded
-        overlayPanel.visibility = if (expanded) View.VISIBLE else View.GONE
-        toggleButton.visibility = if (expanded) View.GONE else View.VISIBLE
-        refreshNotification()
-    }
-
     private fun removeOverlay() {
-        overlayView?.let { view ->
-            windowManager.removeView(view)
-        }
-        overlayView = null
-        layoutParams = null
-        isOverlayExpanded = true
+        dpadWindow?.view?.let { if (it.isAttachedToWindow) windowManager.removeView(it) }
+        fkeysWindow?.view?.let { if (it.isAttachedToWindow) windowManager.removeView(it) }
+        abcdWindow?.view?.let { if (it.isAttachedToWindow) windowManager.removeView(it) }
+        dpadWindow = null
+        fkeysWindow = null
+        abcdWindow = null
+        isExpanded = true
         refreshNotification()
     }
 
@@ -294,14 +323,11 @@ class OverlayKeypadService : Service(), RelayConnectionManager.Listener {
     }
 
     private fun buildNotificationStatusText(): String {
-        val overlayStatus = if (overlayView == null) {
-            getString(R.string.notification_overlay_hidden)
-        } else if (isOverlayExpanded) {
-            getString(R.string.notification_overlay_visible)
-        } else {
-            getString(R.string.notification_overlay_collapsed)
+        val overlayStatus = when {
+            fkeysWindow == null -> getString(R.string.notification_overlay_hidden)
+            !isExpanded -> getString(R.string.notification_overlay_collapsed)
+            else -> getString(R.string.notification_overlay_visible)
         }
-
         return "$overlayStatus · ${latestSnapshot.serverStatus}"
     }
 
@@ -314,9 +340,7 @@ class OverlayKeypadService : Service(), RelayConnectionManager.Listener {
         return PendingIntent.getService(
             this,
             requestCode,
-            Intent(this, OverlayKeypadService::class.java).apply {
-                this.action = action
-            },
+            Intent(this, OverlayKeypadService::class.java).apply { this.action = action },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
     }
@@ -333,24 +357,21 @@ class OverlayKeypadService : Service(), RelayConnectionManager.Listener {
         const val ACTION_OPEN_APP = "com.virtualkeypad.android.action.OPEN_APP"
 
         fun ensureRunning(context: Context) {
-            val intent = Intent(context, OverlayKeypadService::class.java).apply {
-                action = ACTION_INIT
-            }
-            context.startForegroundService(intent)
+            context.startForegroundService(
+                Intent(context, OverlayKeypadService::class.java).apply { action = ACTION_INIT }
+            )
         }
 
         fun start(context: Context) {
-            val intent = Intent(context, OverlayKeypadService::class.java).apply {
-                action = ACTION_SHOW
-            }
-            context.startForegroundService(intent)
+            context.startForegroundService(
+                Intent(context, OverlayKeypadService::class.java).apply { action = ACTION_SHOW }
+            )
         }
 
         fun stop(context: Context) {
-            val intent = Intent(context, OverlayKeypadService::class.java).apply {
-                action = ACTION_HIDE
-            }
-            context.startService(intent)
+            context.startService(
+                Intent(context, OverlayKeypadService::class.java).apply { action = ACTION_HIDE }
+            )
         }
     }
 }
