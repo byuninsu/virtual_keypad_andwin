@@ -114,8 +114,8 @@ class KeypadSettingsStore(context: Context) {
         private const val KEY_DPAD_Y = "dpad_y"
         private const val KEY_FKEYS_X = "fkeys_x"
         private const val KEY_FKEYS_Y = "fkeys_y"
-        private const val KEY_ABCD_X = "abcd_x"
-        private const val KEY_ABCD_Y = "abcd_y"
+        private const val KEY_ABCD_X = "abcd_x2"
+        private const val KEY_ABCD_Y = "abcd_y2"
 
         val DEFAULT_BUTTONS = listOf(
             KeypadButtonConfig("up", "Up", "ArrowUp"),

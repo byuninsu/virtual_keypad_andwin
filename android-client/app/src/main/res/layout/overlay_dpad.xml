@@ -2,25 +2,24 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:background="@drawable/overlay_pad_background"
+    android:padding="8dp">
 
-    <View
-        android:id="@+id/overlayDpadDrag"
-        android:layout_width="220dp"
-        android:layout_height="22dp"
-        android:background="#88000000" />
+    <!-- Row 1: [ ] [UP] [ ] -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
 
-    <FrameLayout
-        android:layout_width="220dp"
-        android:layout_height="220dp"
-        android:background="@drawable/overlay_pad_background">
+        <Space
+            android:layout_width="68dp"
+            android:layout_height="68dp" />
 
         <Button
             android:id="@+id/overlayUpButton"
             android:layout_width="68dp"
             android:layout_height="68dp"
-            android:layout_gravity="top|center_horizontal"
-            android:layout_marginTop="20dp"
             android:background="@drawable/overlay_button_circle"
             android:minWidth="0dp"
             android:minHeight="0dp"
@@ -28,12 +27,21 @@
             android:textColor="#FF444444"
             android:textSize="24sp" />
 
+        <Space
+            android:layout_width="68dp"
+            android:layout_height="68dp" />
+    </LinearLayout>
+
+    <!-- Row 2: [LEFT] [ ] [RIGHT] -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
         <Button
             android:id="@+id/overlayLeftButton"
             android:layout_width="68dp"
             android:layout_height="68dp"
-            android:layout_gravity="center_vertical|start"
-            android:layout_marginStart="20dp"
             android:background="@drawable/overlay_button_circle"
             android:minWidth="0dp"
             android:minHeight="0dp"
@@ -41,30 +49,45 @@
             android:textColor="#FF444444"
             android:textSize="24sp" />
 
+        <Space
+            android:layout_width="68dp"
+            android:layout_height="68dp" />
+
         <Button
             android:id="@+id/overlayRightButton"
             android:layout_width="68dp"
             android:layout_height="68dp"
-            android:layout_gravity="center_vertical|end"
-            android:layout_marginEnd="20dp"
             android:background="@drawable/overlay_button_circle"
             android:minWidth="0dp"
             android:minHeight="0dp"
             android:text="▶"
             android:textColor="#FF444444"
             android:textSize="24sp" />
+    </LinearLayout>
+
+    <!-- Row 3: [ ] [DOWN] [ ] -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Space
+            android:layout_width="68dp"
+            android:layout_height="68dp" />
 
         <Button
             android:id="@+id/overlayDownButton"
             android:layout_width="68dp"
             android:layout_height="68dp"
-            android:layout_gravity="bottom|center_horizontal"
-            android:layout_marginBottom="20dp"
             android:background="@drawable/overlay_button_circle"
             android:minWidth="0dp"
             android:minHeight="0dp"
             android:text="▼"
             android:textColor="#FF444444"
             android:textSize="24sp" />
-    </FrameLayout>
+
+        <Space
+            android:layout_width="68dp"
+            android:layout_height="68dp" />
+    </LinearLayout>
 </LinearLayout>

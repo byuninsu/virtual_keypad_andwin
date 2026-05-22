@@ -30,6 +30,7 @@ class OverlayKeypadService : Service(), RelayConnectionManager.Listener {
     private var dpadWindow: OverlayWindow? = null
     private var fkeysWindow: OverlayWindow? = null
     private var abcdWindow: OverlayWindow? = null
+    private var killZoneWindow: OverlayWindow? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -91,9 +92,7 @@ class OverlayKeypadService : Service(), RelayConnectionManager.Listener {
 
         val dm = resources.displayMetrics
         val sw = dm.widthPixels
-        val sh = dm.heightPixels
         val density = dm.density
-        val midY = (sh * 0.33f).toInt()
 
         // F1~F5 패널: 항상 살아있고 X→O 토글로 expand/collapse 제어
         val fkeysView = LayoutInflater.from(this).inflate(R.layout.overlay_fkeys, null)
@@ -109,34 +108,34 @@ class OverlayKeypadService : Service(), RelayConnectionManager.Listener {
         fkeysView.findViewById<View>(R.id.overlayCloseButton).setOnClickListener {
             setExpanded(false)
         }
-        // O 버튼: 드래그 가능 + 탭으로 복원
+        // O 버튼: 드래그 가능 + 탭으로 복원 + 드롭존으로 앱 종료
+        val restoreBtn = fkeysView.findViewById<View>(R.id.overlayRestoreButton)
         setupWindowDrag(
-            handle = fkeysView.findViewById(R.id.overlayRestoreButton),
+            handle = restoreBtn,
             window = fkeysWindow!!,
-            onTap = { setExpanded(true) }
+            onTap = { setExpanded(true) },
+            onMove = { x, y -> highlightKillZone(x, y) },
+            onDrop = { x, y ->
+                killZoneWindow?.view?.alpha = 0.5f
+                if (isOverKillZone(x, y)) {
+                    removeOverlay()
+                    stopSelf()
+                    true
+                } else false
+            }
         ) { settingsStore.saveFkeysAnchor(it) }
         windowManager.addView(fkeysView, fkeysParams)
 
-        // D-pad: 좌측 끝
+        // D-pad: 좌측 하단 고정
         val dpadView = LayoutInflater.from(this).inflate(R.layout.overlay_dpad, null)
-        val dpadAnchor = settingsStore.loadDpadAnchor() ?: OverlayAnchor(0, midY)
-        val dpadParams = makeParams(dpadAnchor)
+        val dpadParams = makeCornerParams(Gravity.BOTTOM or Gravity.START)
         dpadWindow = OverlayWindow(dpadView, dpadParams)
-        setupWindowDrag(dpadView.findViewById(R.id.overlayDpadDrag), dpadWindow!!) {
-            settingsStore.saveDpadAnchor(it)
-        }
         windowManager.addView(dpadView, dpadParams)
 
-        // A,B,C,D: 우측 끝
+        // A,B,C,D: 우측 하단 고정
         val abcdView = LayoutInflater.from(this).inflate(R.layout.overlay_abcd, null)
-        val abcdWidthPx = (164 * density).toInt()
-        val abcdDefaultX = (sw - abcdWidthPx).coerceAtLeast(0)
-        val abcdAnchor = settingsStore.loadAbcdAnchor() ?: OverlayAnchor(abcdDefaultX, midY)
-        val abcdParams = makeParams(abcdAnchor)
+        val abcdParams = makeCornerParams(Gravity.BOTTOM or Gravity.END)
         abcdWindow = OverlayWindow(abcdView, abcdParams)
-        setupWindowDrag(abcdView.findViewById(R.id.overlayAbcdDrag), abcdWindow!!) {
-            settingsStore.saveAbcdAnchor(it)
-        }
         windowManager.addView(abcdView, abcdParams)
 
         isExpanded = true
@@ -155,14 +154,80 @@ class OverlayKeypadService : Service(), RelayConnectionManager.Listener {
             if (expanded) View.GONE else View.VISIBLE
 
         if (expanded) {
+            hideKillZone()
             if (!dpad.view.isAttachedToWindow) windowManager.addView(dpad.view, dpad.params)
             if (!abcd.view.isAttachedToWindow) windowManager.addView(abcd.view, abcd.params)
         } else {
             if (dpad.view.isAttachedToWindow) windowManager.removeView(dpad.view)
             if (abcd.view.isAttachedToWindow) windowManager.removeView(abcd.view)
+            showKillZone()
         }
         isExpanded = expanded
         refreshNotification()
+    }
+
+    // 앱 종료 드롭존 -------------------------------------------------------
+
+    private fun showKillZone() {
+        if (killZoneWindow != null) return
+        val dm = resources.displayMetrics
+        val sw = dm.widthPixels
+        val sh = dm.heightPixels
+        val density = dm.density
+        val kzW = (160 * density).toInt()
+        val kzH = (52 * density).toInt()
+        val kzX = (sw - kzW) / 2
+        val kzY = sh - kzH - (56 * density).toInt()
+
+        val view = LayoutInflater.from(this).inflate(R.layout.overlay_killzone, null)
+        val params = WindowManager.LayoutParams(
+            kzW, kzH,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            PixelFormat.TRANSLUCENT
+        ).apply {
+            gravity = Gravity.TOP or Gravity.START
+            x = kzX
+            y = kzY
+        }
+        killZoneWindow = OverlayWindow(view, params)
+        view.alpha = 0.5f
+        windowManager.addView(view, params)
+    }
+
+    private fun hideKillZone() {
+        killZoneWindow?.view?.let { if (it.isAttachedToWindow) windowManager.removeView(it) }
+        killZoneWindow = null
+    }
+
+    private fun isOverKillZone(x: Int, y: Int): Boolean {
+        val kz = killZoneWindow ?: return false
+        val dm = resources.displayMetrics
+        val btnSizePx = (44 * dm.density).toInt()
+        val centerX = x + btnSizePx / 2
+        val centerY = y + btnSizePx / 2
+        return centerX in kz.params.x..(kz.params.x + kz.params.width) &&
+            centerY in kz.params.y..(kz.params.y + kz.params.height)
+    }
+
+    private fun highlightKillZone(x: Int, y: Int) {
+        killZoneWindow?.view?.alpha = if (isOverKillZone(x, y)) 1f else 0.5f
+    }
+
+    // ----------------------------------------------------------------------
+
+    private fun makeCornerParams(gravity: Int) = WindowManager.LayoutParams(
+        WindowManager.LayoutParams.WRAP_CONTENT,
+        WindowManager.LayoutParams.WRAP_CONTENT,
+        WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+        PixelFormat.TRANSLUCENT
+    ).apply {
+        this.gravity = gravity
+        x = 0
+        y = 0
     }
 
     private fun makeParams(anchor: OverlayAnchor) = WindowManager.LayoutParams(
@@ -234,6 +299,8 @@ class OverlayKeypadService : Service(), RelayConnectionManager.Listener {
         handle: View,
         window: OverlayWindow,
         onTap: (() -> Unit)? = null,
+        onMove: ((x: Int, y: Int) -> Unit)? = null,
+        onDrop: ((x: Int, y: Int) -> Boolean)? = null,
         onSave: (OverlayAnchor) -> Unit
     ) {
         handle.setOnTouchListener(object : View.OnTouchListener {
@@ -264,12 +331,17 @@ class OverlayKeypadService : Service(), RelayConnectionManager.Listener {
                             params.x = startX + deltaX.toInt()
                             params.y = startY + deltaY.toInt()
                             windowManager.updateViewLayout(window.view, params)
-                            onSave(OverlayAnchor(params.x, params.y))
+                            onMove?.invoke(params.x, params.y)
                         }
                         return true
                     }
                     MotionEvent.ACTION_UP -> {
-                        if (!dragging) onTap?.invoke()
+                        if (!dragging) {
+                            onTap?.invoke()
+                        } else {
+                            val consumed = onDrop?.invoke(params.x, params.y) ?: false
+                            if (!consumed) onSave(OverlayAnchor(params.x, params.y))
+                        }
                         return true
                     }
                 }
@@ -279,6 +351,7 @@ class OverlayKeypadService : Service(), RelayConnectionManager.Listener {
     }
 
     private fun removeOverlay() {
+        hideKillZone()
         dpadWindow?.view?.let { if (it.isAttachedToWindow) windowManager.removeView(it) }
         fkeysWindow?.view?.let { if (it.isAttachedToWindow) windowManager.removeView(it) }
         abcdWindow?.view?.let { if (it.isAttachedToWindow) windowManager.removeView(it) }

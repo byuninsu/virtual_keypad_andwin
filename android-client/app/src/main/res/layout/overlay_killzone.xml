@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/overlayKillZone"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:gravity="center"
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp"
+    android:paddingTop="14dp"
+    android:paddingBottom="14dp"
+    android:background="#CC882222"
+    android:text="✕  앱 종료"
+    android:textColor="#FFFFFFFF"
+    android:textSize="14sp"
+    android:textStyle="bold" />
