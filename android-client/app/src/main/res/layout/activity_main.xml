@@ -214,6 +214,11 @@
             <include layout="@layout/key_config_row_down" />
             <include layout="@layout/key_config_row_left" />
             <include layout="@layout/key_config_row_right" />
+            <include layout="@layout/key_config_row_top1" />
+            <include layout="@layout/key_config_row_top2" />
+            <include layout="@layout/key_config_row_top3" />
+            <include layout="@layout/key_config_row_top4" />
+            <include layout="@layout/key_config_row_top5" />
             <include layout="@layout/key_config_row_primary" />
             <include layout="@layout/key_config_row_secondary" />
             <include layout="@layout/key_config_row_tertiary" />
